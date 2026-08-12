@@ -1,0 +1,21 @@
+{
+  "hosting": {
+    "site": "khatm-dua",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "index.html",
+      "dua.txt",
+      "**/*.md",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/",
+        "destination": "/khatm_dua.html"
+      }
+    ]
+  }
+}
