@@ -244,7 +244,14 @@
     margin: -16px 0 18px;
   }
 
-  .translation-toggle {
+  .copy-controls {
+    display: flex;
+    direction: ltr;
+    justify-content: flex-end;
+    margin: 18px 0 -16px;
+  }
+
+  .subtle-button {
     appearance: none;
     border: 1px solid rgba(122, 96, 42, 0.28);
     border-radius: 999px;
@@ -256,8 +263,8 @@
     transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .translation-toggle:hover,
-  .translation-toggle:focus-visible {
+  .subtle-button:hover,
+  .subtle-button:focus-visible {
     background: rgba(201,168,76,0.08);
     color: #51452f;
     box-shadow: 0 0 0 2px rgba(201,168,76,0.12);
@@ -306,7 +313,7 @@
 
     <div class="translation-controls">
       <button
-        class="translation-toggle"
+        class="subtle-button translation-toggle"
         id="translation-toggle"
         type="button"
         aria-expanded="false"
@@ -536,11 +543,21 @@
 
     <div class="rosette" style="margin-top:20px;">✦</div>
 
+    <div class="copy-controls">
+      <button
+        class="subtle-button"
+        id="copy-button"
+        type="button"
+      >Copy to clipboard</button>
+    </div>
+
   </div>
 </div>
 <script>
+  const duaContent = document.getElementById('dua-content');
   const translationToggle = document.getElementById('translation-toggle');
   const translations = document.querySelectorAll('.translation');
+  const copyButton = document.getElementById('copy-button');
 
   translationToggle.addEventListener('click', () => {
     const showTranslations = translationToggle.getAttribute('aria-expanded') !== 'true';
@@ -553,6 +570,68 @@
     translationToggle.textContent = showTranslations
       ? 'Hide English translation'
       : 'Show English translation';
+  });
+
+  function getDuaText() {
+    const includeTranslations = translationToggle.getAttribute('aria-expanded') === 'true';
+    const copyableElements = duaContent.querySelectorAll(
+      '.bismillah, .sadaqa, .dua-text, .translation, .ameen > strong, .tasbih'
+    );
+
+    return Array.from(copyableElements)
+      .filter((element) => includeTranslations || !element.classList.contains('translation'))
+      .map((element) => {
+        const copy = element.cloneNode(true);
+
+        copy.querySelectorAll('.translation').forEach((translation) => translation.remove());
+        copy.querySelectorAll('br').forEach((lineBreak) => lineBreak.replaceWith('\n'));
+
+        return copy.textContent
+          .replace(/[ \t]*\n[ \t]*/g, '\n')
+          .replace(/[ \t]{2,}/g, ' ')
+          .trim();
+      })
+      .filter(Boolean)
+      .join('\n\n');
+  }
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.setAttribute('readonly', '');
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    const copied = document.execCommand('copy');
+    textArea.remove();
+
+    if (!copied) {
+      throw new Error('Copy command failed');
+    }
+  }
+
+  let copyFeedbackTimer;
+
+  copyButton.addEventListener('click', async () => {
+    clearTimeout(copyFeedbackTimer);
+
+    try {
+      await copyToClipboard(getDuaText());
+      copyButton.textContent = 'Copied to clipboard';
+    } catch (error) {
+      copyButton.textContent = 'Could not copy';
+    }
+
+    copyFeedbackTimer = setTimeout(() => {
+      copyButton.textContent = 'Copy to clipboard';
+    }, 1800);
   });
 </script>
 </body>
